@@ -2,11 +2,14 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
+const SAFE_COLUMNS =
+  'id, email, full_name, role, is_active, is_verified, last_login, created_at, updated_at';
+
 // GET all users
 router.get('/', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM users ORDER BY created_at DESC NULLS LAST'
+      `SELECT ${SAFE_COLUMNS} FROM users ORDER BY created_at DESC NULLS LAST`
     );
     res.json(result.rows);
   } catch (err) {
@@ -18,7 +21,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+    const result = await pool.query(
+      `SELECT ${SAFE_COLUMNS} FROM users WHERE id = $1`,
+      [id]
+    );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -46,7 +52,7 @@ router.post('/', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (email, password_hash, full_name, role, is_active, is_verified, last_login)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
+       RETURNING ${SAFE_COLUMNS}`,
       [email, password_hash, full_name, role, is_active, is_verified, last_login]
     );
 
@@ -75,7 +81,7 @@ router.put('/:id', async (req, res) => {
        SET email = $1, password_hash = $2, full_name = $3, role = $4,
            is_active = $5, is_verified = $6, last_login = $7
        WHERE id = $8
-       RETURNING *`,
+       RETURNING ${SAFE_COLUMNS}`,
       [email, password_hash, full_name, role, is_active, is_verified, last_login, id]
     );
 
@@ -94,7 +100,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
-      'DELETE FROM users WHERE id = $1 RETURNING *',
+      'DELETE FROM users WHERE id = $1 RETURNING id',
       [id]
     );
 
