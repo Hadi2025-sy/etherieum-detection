@@ -3,7 +3,16 @@ const pool = require('../config/db');
 
 const router = Router();
 
-const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+function validateWalletInput(address, network_id, user_id) {
+  const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+  if (!address || !ETH_ADDRESS_RE.test(address)) {
+    return 'Invalid Ethereum address format';
+  }
+  if (!Number.isInteger(Number(network_id)) || !Number.isInteger(Number(user_id))) {
+    return 'network_id and user_id must be integers';
+  }
+  return null;
+}
 
 // GET all wallets
 router.get('/', async (req, res) => {
@@ -29,12 +38,8 @@ router.get('/:id', async (req, res) => {
 // POST create wallet
 router.post('/', async (req, res) => {
   const { address, network_id, user_id, label } = req.body;
-  if (!address || !ETH_ADDRESS_RE.test(address)) {
-    return res.status(400).json({ error: 'Invalid Ethereum address format' });
-  }
-  if (!Number.isInteger(Number(network_id)) || !Number.isInteger(Number(user_id))) {
-    return res.status(400).json({ error: 'network_id and user_id must be integers' });
-  }
+  const validationError = validateWalletInput(address, network_id, user_id);
+  if (validationError) return res.status(400).json({ error: validationError });
   try {
     const result = await pool.query(
       'INSERT INTO wallets (address, network_id, user_id, label) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -49,12 +54,8 @@ router.post('/', async (req, res) => {
 // PUT update wallet
 router.put('/:id', async (req, res) => {
   const { address, network_id, user_id, label } = req.body;
-  if (!address || !ETH_ADDRESS_RE.test(address)) {
-    return res.status(400).json({ error: 'Invalid Ethereum address format' });
-  }
-  if (!Number.isInteger(Number(network_id)) || !Number.isInteger(Number(user_id))) {
-    return res.status(400).json({ error: 'network_id and user_id must be integers' });
-  }
+  const validationError = validateWalletInput(address, network_id, user_id);
+  if (validationError) return res.status(400).json({ error: validationError });
   try {
     const result = await pool.query(
       'UPDATE wallets SET address = $1, network_id = $2, user_id = $3, label = $4 WHERE id = $5 RETURNING *',

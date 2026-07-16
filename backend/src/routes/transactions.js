@@ -6,6 +6,19 @@ const router = Router();
 const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 const TX_HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 
+function validateTransactionInput({ tx_hash, from_address, to_address, block_number }) {
+  if (tx_hash && !TX_HASH_RE.test(tx_hash)) {
+    return 'Invalid transaction hash format';
+  }
+  if ((from_address && !ETH_ADDRESS_RE.test(from_address)) || (to_address && !ETH_ADDRESS_RE.test(to_address))) {
+    return 'Invalid Ethereum address format';
+  }
+  if (block_number !== undefined && (!Number.isInteger(Number(block_number)) || Number(block_number) < 0)) {
+    return 'block_number must be a non-negative integer';
+  }
+  return null;
+}
+
 // GET all transactions
 router.get('/', async (req, res) => {
   try {
@@ -30,15 +43,8 @@ router.get('/:id', async (req, res) => {
 // POST create transaction
 router.post('/', async (req, res) => {
   const { tx_hash, from_address, to_address, value, network_id, block_number, timestamp } = req.body;
-  if (tx_hash && !TX_HASH_RE.test(tx_hash)) {
-    return res.status(400).json({ error: 'Invalid transaction hash format' });
-  }
-  if ((from_address && !ETH_ADDRESS_RE.test(from_address)) || (to_address && !ETH_ADDRESS_RE.test(to_address))) {
-    return res.status(400).json({ error: 'Invalid Ethereum address format' });
-  }
-  if (block_number !== undefined && (!Number.isInteger(Number(block_number)) || Number(block_number) < 0)) {
-    return res.status(400).json({ error: 'block_number must be a non-negative integer' });
-  }
+  const validationError = validateTransactionInput({ tx_hash, from_address, to_address, block_number });
+  if (validationError) return res.status(400).json({ error: validationError });
   try {
     const result = await pool.query(
       'INSERT INTO transactions (tx_hash, from_address, to_address, value, network_id, block_number, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
@@ -53,15 +59,8 @@ router.post('/', async (req, res) => {
 // PUT update transaction
 router.put('/:id', async (req, res) => {
   const { tx_hash, from_address, to_address, value, network_id, block_number, timestamp } = req.body;
-  if (tx_hash && !TX_HASH_RE.test(tx_hash)) {
-    return res.status(400).json({ error: 'Invalid transaction hash format' });
-  }
-  if ((from_address && !ETH_ADDRESS_RE.test(from_address)) || (to_address && !ETH_ADDRESS_RE.test(to_address))) {
-    return res.status(400).json({ error: 'Invalid Ethereum address format' });
-  }
-  if (block_number !== undefined && (!Number.isInteger(Number(block_number)) || Number(block_number) < 0)) {
-    return res.status(400).json({ error: 'block_number must be a non-negative integer' });
-  }
+  const validationError = validateTransactionInput({ tx_hash, from_address, to_address, block_number });
+  if (validationError) return res.status(400).json({ error: validationError });
   try {
     const result = await pool.query(
       'UPDATE transactions SET tx_hash = $1, from_address = $2, to_address = $3, value = $4, network_id = $5, block_number = $6, timestamp = $7 WHERE id = $8 RETURNING *',
