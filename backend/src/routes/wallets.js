@@ -1,0 +1,82 @@
+const { Router } = require('express');
+const pool = require('../config/db');
+
+const router = Router();
+
+function validateWalletInput(address, network_id, user_id) {
+  const ETH_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+  if (!address || !ETH_ADDRESS_RE.test(address)) {
+    return 'Invalid Ethereum address format';
+  }
+  if (!Number.isInteger(Number(network_id)) || !Number.isInteger(Number(user_id))) {
+    return 'network_id and user_id must be integers';
+  }
+  return null;
+}
+
+// GET all wallets
+router.get('/', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM wallets ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET wallet by id
+router.get('/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM wallets WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Wallet not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST create wallet
+router.post('/', async (req, res) => {
+  const { address, network_id, user_id, label } = req.body;
+  const validationError = validateWalletInput(address, network_id, user_id);
+  if (validationError) return res.status(400).json({ error: validationError });
+  try {
+    const result = await pool.query(
+      'INSERT INTO wallets (address, network_id, user_id, label) VALUES ($1, $2, $3, $4) RETURNING *',
+      [address, network_id, user_id, label]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT update wallet
+router.put('/:id', async (req, res) => {
+  const { address, network_id, user_id, label } = req.body;
+  const validationError = validateWalletInput(address, network_id, user_id);
+  if (validationError) return res.status(400).json({ error: validationError });
+  try {
+    const result = await pool.query(
+      'UPDATE wallets SET address = $1, network_id = $2, user_id = $3, label = $4 WHERE id = $5 RETURNING *',
+      [address, network_id, user_id, label, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Wallet not found' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE wallet
+router.delete('/:id', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM wallets WHERE id = $1 RETURNING *', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Wallet not found' });
+    res.json({ message: 'Wallet deleted', wallet: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
