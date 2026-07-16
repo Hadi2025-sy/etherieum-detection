@@ -66,7 +66,6 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      address,
       network = null,
       entity_type = null,
       is_exchange = false,
@@ -80,13 +79,13 @@ router.put('/:id', async (req, res) => {
 
     const result = await pool.query(
       `UPDATE wallets
-       SET address = $1, network = $2, entity_type = $3, is_exchange = $4,
-           is_contract = $5, total_received_eth = $6, total_sent_eth = $7,
-           transaction_count = $8, first_seen = $9, last_seen = $10
-       WHERE id = $11
+       SET network = $1, entity_type = $2, is_exchange = $3,
+           is_contract = $4, total_received_eth = $5, total_sent_eth = $6,
+           transaction_count = $7, first_seen = $8, last_seen = $9
+       WHERE id = $10
        RETURNING *`,
       [
-        address, network, entity_type, is_exchange, is_contract,
+        network, entity_type, is_exchange, is_contract,
         total_received_eth, total_sent_eth, transaction_count, first_seen, last_seen, id,
       ]
     );

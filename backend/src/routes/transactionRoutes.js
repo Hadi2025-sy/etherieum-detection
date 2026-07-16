@@ -78,7 +78,6 @@ router.put('/:id', async (req, res) => {
     const {
       analysis_id = null,
       snapshot_id = null,
-      tx_hash,
       from_address,
       to_address = null,
       value_eth = null,
@@ -92,13 +91,13 @@ router.put('/:id', async (req, res) => {
 
     const result = await pool.query(
       `UPDATE transactions
-       SET analysis_id = $1, snapshot_id = $2, tx_hash = $3, from_address = $4,
-           to_address = $5, value_eth = $6, gas_price_gwei = $7, gas_used = $8,
-           block_number = $9, block_time = $10, is_internal = $11, method_id = $12
-       WHERE id = $13
+       SET analysis_id = $1, snapshot_id = $2, from_address = $3,
+           to_address = $4, value_eth = $5, gas_price_gwei = $6, gas_used = $7,
+           block_number = $8, block_time = $9, is_internal = $10, method_id = $11
+       WHERE id = $12
        RETURNING *`,
       [
-        analysis_id, snapshot_id, tx_hash, from_address, to_address,
+        analysis_id, snapshot_id, from_address, to_address,
         value_eth, gas_price_gwei, gas_used, block_number, block_time,
         is_internal, method_id, id,
       ]
