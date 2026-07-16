@@ -3,6 +3,8 @@ const pool = require('../config/db');
 
 const router = Router();
 
+const RPC_URL_RE = /^(https?|wss?):\/\/.+/;
+
 // GET all networks
 router.get('/', async (req, res) => {
   try {
@@ -27,6 +29,9 @@ router.get('/:id', async (req, res) => {
 // POST create network
 router.post('/', async (req, res) => {
   const { name, chain_id, rpc_url, symbol } = req.body;
+  if (rpc_url && !RPC_URL_RE.test(rpc_url)) {
+    return res.status(400).json({ error: 'rpc_url must be a valid http, https, ws, or wss URL' });
+  }
   try {
     const result = await pool.query(
       'INSERT INTO networks (name, chain_id, rpc_url, symbol) VALUES ($1, $2, $3, $4) RETURNING *',
@@ -41,6 +46,9 @@ router.post('/', async (req, res) => {
 // PUT update network
 router.put('/:id', async (req, res) => {
   const { name, chain_id, rpc_url, symbol } = req.body;
+  if (rpc_url && !RPC_URL_RE.test(rpc_url)) {
+    return res.status(400).json({ error: 'rpc_url must be a valid http, https, ws, or wss URL' });
+  }
   try {
     const result = await pool.query(
       'UPDATE networks SET name = $1, chain_id = $2, rpc_url = $3, symbol = $4 WHERE id = $5 RETURNING *',

@@ -27,6 +27,10 @@ router.get('/:id', async (req, res) => {
 // POST create wallet analysis
 router.post('/', async (req, res) => {
   const { wallet_id, risk_score, is_fraud, analysis_notes, analyzed_at } = req.body;
+  const score = Number(risk_score);
+  if (isNaN(score) || score < 0 || score > 100) {
+    return res.status(400).json({ error: 'risk_score must be a number between 0 and 100' });
+  }
   try {
     const result = await pool.query(
       'INSERT INTO wallet_analyses (wallet_id, risk_score, is_fraud, analysis_notes, analyzed_at) VALUES ($1, $2, $3, $4, $5) RETURNING *',
@@ -41,6 +45,10 @@ router.post('/', async (req, res) => {
 // PUT update wallet analysis
 router.put('/:id', async (req, res) => {
   const { wallet_id, risk_score, is_fraud, analysis_notes, analyzed_at } = req.body;
+  const score = Number(risk_score);
+  if (isNaN(score) || score < 0 || score > 100) {
+    return res.status(400).json({ error: 'risk_score must be a number between 0 and 100' });
+  }
   try {
     const result = await pool.query(
       'UPDATE wallet_analyses SET wallet_id = $1, risk_score = $2, is_fraud = $3, analysis_notes = $4, analyzed_at = $5 WHERE id = $6 RETURNING *',

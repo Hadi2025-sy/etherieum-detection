@@ -18,6 +18,7 @@ const apiLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' },
 });
 
 app.get('/', (req, res) => {
